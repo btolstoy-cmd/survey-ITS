@@ -1,0 +1,687 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>ITS Style Lineup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Jost:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: a ranked board. Each style is one card holding a left-to-right strip of the real site's pages and ordering flows; the card order is your ranking, and any page opens full screen. Colors are the ITS website's own. */
+:root{
+  --bg:#eef1f4; --panel:#ffffff; --ink:#231f20; --ink-2:#4a4a4a; --ink-3:#888a8c; --line:#d6dbe0; --soft:#f5f7f9;
+  --brand:#2b516c; --brand-ink:#ffffff; --accent:#ed3523; --accent-ink:#ffffff; --accent-soft:#fde4e1; --ok:#1f8a55; --ok-soft:#dcf2e6;
+  --code:#141a1f; --code-ink:#e3e8ec; --scrim:rgba(20,26,31,.72);
+  --f-display:"Barlow Condensed","Arial Narrow",sans-serif; --f-body:"Jost",system-ui,sans-serif; --f-mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#12171b; --panel:#1b2228; --ink:#eef1f4; --ink-2:#b4bec7; --ink-3:#7f8b95; --line:#2d363e; --soft:#222a31;
+  --brand:#3b6a8b; --brand-ink:#ffffff; --accent:#ff5a47; --accent-ink:#1a0603; --accent-soft:#3d1a16; --ok:#5fd09a; --ok-soft:#173327;
+  --code:#0b0f12; --code-ink:#e3e8ec; --scrim:rgba(0,0,0,.78); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#12171b; --panel:#1b2228; --ink:#eef1f4; --ink-2:#b4bec7; --ink-3:#7f8b95; --line:#2d363e; --soft:#222a31;
+  --brand:#3b6a8b; --brand-ink:#ffffff; --accent:#ff5a47; --accent-ink:#1a0603; --accent-soft:#3d1a16; --ok:#5fd09a; --ok-soft:#173327;
+  --code:#0b0f12; --code-ink:#e3e8ec; --scrim:rgba(0,0,0,.78); color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:15px/1.5 var(--f-body);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 56px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:20;background:var(--bg)}
+.wrap{max-width:1320px;margin:0 auto}
+button,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.mast{padding-block:26px 12px;display:grid;gap:8px}
+.eyebrow{font:600 11px var(--f-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
+h1{font:800 clamp(34px,5.4vw,60px)/.95 var(--f-display);margin:0;text-transform:uppercase;text-wrap:balance}
+h1 em{font-style:normal;color:var(--accent)}
+.lede{max-width:72ch;color:var(--ink-2);margin:0}
+.pal{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font:500 11.5px var(--f-mono);color:var(--ink-3)}
+.pal i{width:18px;height:18px;border-radius:4px;border:1px solid rgba(127,127,127,.3);display:inline-block;vertical-align:middle}
+.tabs{position:sticky;top:env(safe-area-inset-top,0px);z-index:10;background:var(--bg);display:flex;gap:6px;padding-block:10px;border-bottom:1px solid var(--line);margin-bottom:18px;overflow-x:auto}
+.tabs button{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:7px 15px;font-weight:600;font-size:14px;cursor:pointer;white-space:nowrap}
+.tabs button[aria-selected=true]{background:var(--brand);color:var(--brand-ink);border-color:var(--brand)}
+section[role=tabpanel]{display:grid;gap:14px}
+
+.howto{display:flex;gap:12px;align-items:center;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:10px;padding:10px 14px;font-size:14px}
+.howto b{font:700 17px var(--f-display);text-transform:uppercase;letter-spacing:.02em}
+.howto .sp{flex:1}
+.status{font:500 12px var(--f-mono);color:var(--ink-3)}
+.status.ok{color:var(--ok)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;background:var(--panel)}
+.seg button{border:0;background:none;padding:5px 12px;font-size:13px;font-weight:600;cursor:pointer;color:var(--ink-2)}
+.seg button[aria-pressed=true]{background:var(--ink);color:var(--bg)}
+
+/* the ranked list: every card is a draggable row */
+.board{list-style:none;margin:0;padding:0;display:grid;gap:12px;position:relative}
+.card{display:grid;grid-template-columns:64px 236px minmax(0,1fr);background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;transition:box-shadow .15s,border-color .15s}
+.card.drag{box-shadow:0 18px 40px rgba(0,0,0,.22);border-color:var(--accent);position:relative;z-index:5}
+.rankcol{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 6px;border-right:1px solid var(--line);background:var(--soft)}
+.rankno{font:800 30px/1 var(--f-display);color:var(--accent);font-variant-numeric:tabular-nums}
+.grip{width:40px;height:44px;border:1px dashed var(--line);border-radius:10px;background:var(--panel);display:grid;place-items:center;color:var(--ink-3);cursor:grab;touch-action:none;padding:0}
+.grip:active{cursor:grabbing}.grip:hover{border-color:var(--accent);color:var(--accent)}
+.mv{display:grid;gap:3px}
+.mv button{width:32px;height:24px;border:1px solid var(--line);background:var(--panel);border-radius:6px;cursor:pointer;font-size:11px;line-height:1}
+.mv button:disabled{opacity:.3;cursor:default}
+.meta{padding:14px;border-right:1px solid var(--line);display:flex;flex-direction:column;gap:8px;min-width:0}
+.meta h3{margin:0;font:800 23px/1 var(--f-display);text-transform:uppercase}
+.meta p{margin:0;font-size:13px;color:var(--ink-2)}
+.chips{display:flex;gap:4px}.chip{width:24px;height:24px;border-radius:6px;border:1px solid rgba(127,127,127,.35)}
+.facts{display:grid;gap:2px;font:500 11.5px var(--f-mono);color:var(--ink-2)}
+.facts span{display:flex;gap:6px}.facts b{width:40px;flex:none;color:var(--ink-3);font-weight:600}
+.team-pill{font:600 11px var(--f-mono);border-radius:999px;padding:2px 8px;background:var(--soft);color:var(--ink-2);align-self:flex-start}
+.open{margin-top:auto;border:0;background:var(--brand);color:var(--brand-ink);border-radius:9px;padding:8px 12px;font-weight:600;font-size:13.5px;cursor:pointer;text-align:left}
+.strip{overflow-x:auto;scrollbar-width:thin;background:var(--soft)}
+.strip-in{display:flex;gap:12px;padding:14px;width:max-content}
+.shot{display:flex;flex-direction:column;gap:6px;border:0;background:none;padding:0;cursor:zoom-in;text-align:left}
+.shot img{width:300px;height:202px;object-fit:cover;object-position:top;border-radius:9px;border:1px solid var(--line);display:block;background:var(--panel);transition:transform .15s,box-shadow .15s}
+.shot:hover img{transform:translateY(-2px);box-shadow:0 8px 20px rgba(0,0,0,.14)}
+.shot span{display:flex;gap:8px;align-items:baseline;font-weight:600;font-size:13px}
+.shot small{font:600 10px var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+.shot small.flow{color:var(--accent)}
+
+/* emails */
+.ecard{display:grid;grid-template-columns:64px 392px minmax(0,1fr);background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.ebody{padding:12px 14px;display:grid;gap:8px;min-width:0;align-content:start}
+.ehead{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.ehead h3{margin:0;font:800 21px/1 var(--f-display);text-transform:uppercase}
+.ehead p{margin:0;font-size:13px;color:var(--ink-2);flex:1;min-width:220px}
+.traits{display:flex;gap:5px;flex-wrap:wrap}
+.traits span{font:500 11px var(--f-mono);background:var(--soft);border-radius:6px;padding:2px 7px;color:var(--ink-2)}
+.acts{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.b{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:6px 12px;font-weight:600;font-size:13px;cursor:pointer}
+.b.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.done{font:600 12px var(--f-mono);color:var(--ok)}
+pre.code{margin:0;background:var(--code);color:var(--code-ink);border-radius:10px;padding:12px;font:11.5px/1.5 var(--f-mono);overflow:auto;max-height:360px;white-space:pre}
+.note{font-size:13px;color:var(--ink-2);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:0}
+.note code{font-family:var(--f-mono);font-size:12px}
+
+.eprev{background:var(--soft);border-right:1px solid var(--line);padding:14px;display:flex;flex-direction:column;gap:8px;align-items:center}
+.eprev-box{width:360px;height:420px;overflow:hidden;border-radius:8px;border:1px solid var(--line);background:#fff;position:relative;cursor:zoom-in}
+.eprev-box iframe{position:absolute;left:0;top:0;width:600px;height:1200px;border:0;transform:scale(.6);transform-origin:0 0;pointer-events:none}
+.eprev-box::after{content:"";position:absolute;left:0;right:0;bottom:0;height:46px;background:linear-gradient(transparent,rgba(255,255,255,.95))}
+.eprev .b{width:100%}
+.em{position:fixed;inset:0;z-index:60;background:#0c0f12;display:flex;flex-direction:column;align-items:center;gap:10px;padding:calc(env(safe-area-inset-top,0px) + 12px) max(12px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 12px) max(12px,env(safe-area-inset-left,0px))}
+.em-bar{display:flex;gap:10px;align-items:center;width:min(100%,680px);color:#eef1f4}.em-bar b{font:800 22px/1 var(--f-display);text-transform:uppercase;flex:1}
+.em-bar .seg button{color:var(--ink-2)}
+.em-stage{flex:1;min-height:0;width:100%;position:relative;display:flex;justify-content:center}.em-stage .vw-nav{z-index:2}
+.em iframe{height:100%;width:min(100%,680px);border:0;border-radius:10px;background:#fff;transition:width .2s}
+.em.phone iframe{width:390px}
+.em-x{width:40px;height:40px;border-radius:50%;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.1);color:#fff;font-size:18px;cursor:pointer}
+@media (max-width:900px){.ecard{grid-template-columns:56px minmax(0,1fr)}.eprev{grid-column:1/-1;border-right:0;border-bottom:1px solid var(--line);order:3}.eprev-box{width:100%;max-width:360px}}
+/* team results */
+.res{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,380px),1fr));gap:14px;align-items:start}
+.rbox{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;display:grid;gap:8px}
+.rbox h3{margin:0;font:800 20px var(--f-display);text-transform:uppercase;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.rbox h3 small{font:500 11.5px var(--f-mono);text-transform:none;color:var(--ink-3)}
+.tr{display:grid;grid-template-columns:24px minmax(0,1fr) 120px 34px;gap:8px;align-items:center;font-size:14px}
+.tr .p{font:700 12px var(--f-mono);color:var(--ink-3);text-align:center}.tr:first-of-type .p{color:var(--accent)}
+.tr .t{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600}
+.meter{height:8px;border-radius:4px;background:var(--soft);overflow:hidden}.meter i{display:block;height:100%;background:var(--brand);border-radius:4px}
+.tr .pts{font:500 11px var(--f-mono);color:var(--ink-3);text-align:right}
+.empty{font-size:13px;color:var(--ink-3)}
+.tags{display:flex;flex-wrap:wrap;gap:4px}.tr .tags{grid-column:2/-1;margin:-2px 0 4px}
+.nt{display:inline-flex;align-items:center;gap:4px;padding:1px 7px 1px 2px;border-radius:999px;background:var(--soft);border:1px solid var(--line);font:500 11.5px var(--f-body);color:var(--ink-2);white-space:nowrap}
+.nt b{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 4px;border-radius:999px;background:var(--panel);border:1px solid var(--line);font:700 10.5px var(--f-mono);color:var(--ink-2)}
+.nt.top b{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}.nt.hi b{background:var(--brand);border-color:var(--brand);color:var(--brand-ink)}.nt.me{border-color:var(--ink-3)}
+.nm{position:fixed;inset:0;z-index:80;background:var(--scrim,rgba(0,0,0,.6));display:grid;place-items:center;padding:16px}
+.nm form{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:22px;width:min(100%,420px);display:grid;gap:12px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.nm h2{margin:0;font:800 22px/1.1 var(--f-display);text-transform:uppercase}.nm p{margin:0;color:var(--ink-2);font-size:14px}
+.nm input{font:inherit;padding:10px 12px;border:1.5px solid var(--line);border-radius:8px;background:var(--soft);color:var(--ink)}.nm input:focus{border-color:var(--accent);outline:none}
+.nm .row2{display:flex;gap:8px;justify-content:flex-end}.nm button{padding:9px 16px;border-radius:8px;border:1px solid var(--line);background:transparent;cursor:pointer;font-weight:600}
+.nm button[type=submit]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}.nm .err{color:var(--accent);font-size:13px;min-height:1em}
+.sbar{position:fixed;left:0;right:0;bottom:0;z-index:70;background:var(--ink);color:var(--bg);box-shadow:0 -10px 30px rgba(0,0,0,.25);padding:18px max(16px,env(safe-area-inset-right,0px)) calc(18px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.sbar-in{max-width:1320px;margin:0 auto;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.sbar-txt{flex:1;min-width:220px;display:grid;gap:2px}.sbar-txt b{font:800 24px/1.1 var(--f-display);text-transform:uppercase;letter-spacing:.02em}.sbar-txt span{font-size:14px;opacity:.85}
+.sbar-go{background:var(--accent);color:var(--accent-ink);border:0;border-radius:10px;padding:16px 34px;font:800 19px var(--f-display);text-transform:uppercase;letter-spacing:.06em;cursor:pointer}
+.sbar-go:disabled{opacity:.6;cursor:default}.sbar-undo{background:transparent;color:inherit;border:1px solid currentColor;border-radius:10px;padding:14px 18px;font-weight:600;cursor:pointer;opacity:.85}
+.sbar.ok{background:var(--ok);color:#fff}.sbar.ok .sbar-go{background:#fff;color:var(--ok)}
+body.has-bar{padding-bottom:140px}
+.rk{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden;font-size:14px}
+.rk th{font:700 11px var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);text-align:left;padding:10px 12px;border-bottom:1px solid var(--line)}
+.rk td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:middle}.rk tr:last-child td{border-bottom:0}.rk tr.off td{opacity:.5}.rk tr.off td:last-child{opacity:1}
+.rk b{font-weight:700}.rk .mut{color:var(--ink-3);font-size:12.5px}.rk button{padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:var(--soft);color:var(--ink);font-weight:600;cursor:pointer;white-space:nowrap}
+.rk button.rm{border-color:var(--accent);color:var(--accent);background:transparent}.rk-wrap{overflow-x:auto}
+.who-btn{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:3px 10px;font:500 12px var(--f-mono);color:var(--ink-2);cursor:pointer;margin-left:8px;white-space:nowrap}
+.voters{display:flex;gap:10px;flex-wrap:wrap;align-items:center;font-size:13px;color:var(--ink-2)}
+.voters span{display:inline-flex;gap:5px;align-items:center}.voters img{width:22px;height:22px;border-radius:50%}
+
+/* design concepts */
+.cstrip{overflow-x:auto;scrollbar-width:thin;background:var(--soft)}
+.cstrip-in{display:flex;gap:14px;padding:14px;width:max-content}
+.cshot{display:flex;flex-direction:column;gap:6px;border:0;background:none;padding:0;cursor:zoom-in;text-align:left;width:320px}
+.cshot img{width:320px;height:200px;object-fit:cover;object-position:top;border-radius:9px;border:1px solid var(--line);display:block;background:var(--panel);transition:transform .15s,box-shadow .15s}
+.cshot:hover img{transform:translateY(-2px);box-shadow:0 10px 24px rgba(0,0,0,.16)}
+.cshot b{font-size:13.5px}.cshot span{font-size:12.5px;color:var(--ink-2);line-height:1.35}
+.cshot small{font:600 10px var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+.mech{display:grid;gap:6px;font-size:12.5px;color:var(--ink-2)}
+.mech div{display:grid;gap:1px}.mech b{font:600 10px var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+.lb{position:fixed;inset:0;z-index:60;background:#0c0f12;color:#eef1f4;display:flex;flex-direction:column;gap:8px;padding:calc(env(safe-area-inset-top,0px) + 10px) max(12px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 10px) max(12px,env(safe-area-inset-left,0px))}
+.vw-bar{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.vw-l{display:flex;gap:6px;align-items:center}
+.vw-ic{width:38px;height:38px;border-radius:50%;border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.08);color:#fff;font-size:18px;cursor:pointer}
+.vw-x{margin-left:auto}
+.vw-sel select{height:38px;border-radius:10px;border:1px solid rgba(255,255,255,.28);background:#1b2228;color:#fff;font:700 15px var(--f-body);padding:0 12px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.vw-rank{font:600 12px var(--f-mono);color:#9aa6b0;margin-left:6px}
+.vw-pages{display:flex;gap:4px;flex-wrap:wrap}
+.vw-pages button{border:1px solid rgba(255,255,255,.25);background:none;color:#eef1f4;border-radius:999px;padding:6px 13px;font-size:13px;font-weight:600;cursor:pointer}
+.vw-pages button[aria-pressed=true]{background:#ed3523;border-color:#ed3523}
+.vw-bar2{border-top:1px solid rgba(255,255,255,.1);padding-top:8px}
+.vw-grp{display:flex;gap:8px;align-items:center}
+.vw-k{font:600 11px var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:#9aa6b0}
+.vw-sw{display:flex;gap:6px}
+.vw-sw button{display:flex;align-items:center;gap:6px;border:1px solid rgba(255,255,255,.25);background:none;color:#eef1f4;border-radius:999px;padding:4px 11px 4px 5px;font-size:12.5px;cursor:pointer}
+.vw-sw button[aria-pressed=true]{border-color:#fff;background:rgba(255,255,255,.12)}
+.vw-sw i{width:20px;height:20px;border-radius:50%;display:inline-block;border:2px solid rgba(255,255,255,.6)}
+.vw-shapes{background:#1b2228;border-color:rgba(255,255,255,.25)}.vw-shapes button{color:#cfd6dc}.vw-shapes button[aria-pressed=true]{background:#fff;color:#12171b}
+.vw-shapes button svg{vertical-align:-3px;margin-right:4px}
+.vw-note{font-size:12.5px;color:#9aa6b0}
+.vw-stage{flex:1;min-height:0;position:relative;display:grid;place-items:center;overflow:hidden;border-radius:10px;background:#161b20}
+.vw-fit{width:1440px;height:900px;transform-origin:center center;box-shadow:0 20px 60px rgba(0,0,0,.5);background:#fff;border-radius:6px;overflow:hidden}
+.vw-fit iframe,.vw-fit img{width:1440px;height:900px;border:0;display:block}
+.vw-nav{position:absolute;top:50%;transform:translateY(-50%);width:46px;height:46px;border-radius:50%;border:1px solid rgba(255,255,255,.3);background:rgba(12,15,18,.7);color:#fff;font-size:22px;cursor:pointer}
+.vw-cap{margin:0;text-align:center;font-size:13.5px;color:#c4ccd3}
+/* full-page viewer */
+.fp{position:fixed;inset:0;z-index:50;background:var(--scrim);display:flex;flex-direction:column;padding:calc(env(safe-area-inset-top,0px) + 10px) max(10px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 10px) max(10px,env(safe-area-inset-left,0px))}
+[hidden]{display:none!important}
+.fp-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--panel);border-radius:12px 12px 0 0;padding:8px 10px;border:1px solid var(--line);border-bottom:0}
+.fp-bar h2{margin:0;font:800 20px/1 var(--f-display);text-transform:uppercase;min-width:0}
+.fp-bar .nav{display:flex;gap:4px}
+.fp-bar .sp{flex:1}
+.fp-views{display:flex;gap:4px;overflow-x:auto;padding:6px 10px;background:var(--panel);border:1px solid var(--line);border-top:1px solid var(--line);border-bottom:0}
+.fp-views button{border:1px solid var(--line);background:var(--soft);border-radius:999px;padding:4px 11px;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap}
+.fp-views button[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.fp-views small{font:600 9.5px var(--f-mono);opacity:.75;margin-left:4px;text-transform:uppercase}
+.fp-stage .vw-nav{z-index:2}.fp-stage{flex:1;min-height:0;background:var(--soft);border:1px solid var(--line);border-radius:0 0 12px 12px;display:flex;justify-content:center;overflow:hidden;position:relative}
+.fp-stage iframe{border:0;width:100%;height:100%;background:#fff;transition:width .25s}
+.fp-stage.phone iframe{width:390px;max-width:100%;border-left:1px solid var(--line);border-right:1px solid var(--line)}
+.fp-load{position:absolute;inset:0;display:grid;place-items:center;background:var(--soft);font:500 13px var(--f-mono);color:var(--ink-3)}
+.x{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:var(--soft);cursor:pointer;font-size:16px}
+
+@media (max-width:900px){
+  .card{grid-template-columns:56px minmax(0,1fr)}
+  .meta{border-right:0}
+  .strip{grid-column:1/-1;border-top:1px solid var(--line)}
+  .shot img{width:240px;height:162px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header class="mast">
+    <span class="eyebrow">Industrial Tube &amp; Steel · ordering portal · style review</span>
+    <h1>Pick the <em>look</em> of the ITS portal</h1>
+    <p class="lede"><b>Design concepts</b> are our current prototype plus ten pictures of different directions, each with its own visual style and its own way to build an order. <b>Website styles</b> are the working prototype in ten color schemes taken from industrialtube.com. <b>Email HTML</b> is ready to paste. Drag the cards in each tab to rank them, favorite at the top.</p>
+    <div class="pal" aria-label="ITS website colors used"><span>ITS colors:</span><i style="background:#2b516c"></i>#2b516c <i style="background:#19546e"></i>#19546e <i style="background:#ed3523"></i>#ed3523 <i style="background:#231f20"></i>#231f20 <i style="background:#4a4a4a"></i>#4a4a4a <i style="background:#cde7f9"></i>#cde7f9 <i style="background:#457579"></i>#457579 <i style="background:#48b5e5"></i>#48b5e5</div>
+  </header>
+  <nav class="tabs" role="tablist" aria-label="Sections">
+    <button type="button" role="tab" id="tab-concepts" aria-controls="concepts" aria-selected="true">Design concepts · rank them</button>
+    <button type="button" role="tab" id="tab-web" aria-controls="web" aria-selected="false">Website styles · rank them</button>
+    <button type="button" role="tab" id="tab-email" aria-controls="email" aria-selected="false">Email HTML · rank them</button>
+    <button type="button" role="tab" id="tab-team" aria-controls="team" aria-selected="false">Team results</button>
+    <button type="button" role="tab" id="tab-rankers" aria-controls="rankers" aria-selected="false" hidden>Rankers</button>
+  </nav>
+
+  <section role="tabpanel" id="concepts" aria-labelledby="tab-concepts">
+    <div class="howto"><b>Drag to rank</b><span>Our prototype plus ten directions, five pages each. Grab the handle or use the arrows; top is your favorite. Click any page to open the viewer, where you can switch style, page, color style and corner shape.</span><span class="sp"></span><span class="status" data-status role="status"></span>
+      <span class="seg" role="group" aria-label="Order the concepts by"><button type="button" data-sort="mine" aria-pressed="true">My ranking</button><button type="button" data-sort="team" aria-pressed="false">Team ranking</button></span></div>
+    <ol class="board" id="board-concepts" aria-label="Design concepts, in your ranked order"></ol>
+  </section>
+
+  <section role="tabpanel" id="web" aria-labelledby="tab-web" hidden>
+    <div class="howto"><b>Drag to rank</b><span>Grab a card by the <svg width="10" height="14" viewBox="0 0 12 16" fill="currentColor" aria-hidden="true"><circle cx="3" cy="3" r="1.6"/><circle cx="9" cy="3" r="1.6"/><circle cx="3" cy="8" r="1.6"/><circle cx="9" cy="8" r="1.6"/><circle cx="3" cy="13" r="1.6"/><circle cx="9" cy="13" r="1.6"/></svg> handle, or use the arrows. Top is your favorite.</span><span class="sp"></span><span class="status" data-status role="status"></span>
+      <span class="seg" role="group" aria-label="Order the cards by"><button type="button" data-sort="mine" aria-pressed="true">My ranking</button><button type="button" data-sort="team" aria-pressed="false">Team ranking</button></span></div>
+    <ol class="board" id="board-web" aria-label="Website styles, in your ranked order"></ol>
+  </section>
+
+  <section role="tabpanel" id="email" aria-labelledby="tab-email" hidden>
+    <div class="howto"><b>Drag to rank</b><span>Same as the website styles: top is your favorite. Copy any email's HTML straight into Dynamics 365 or another email builder.</span><span class="sp"></span><span class="status" data-status role="status"></span></div>
+    <p class="note">Every email is a complete, table-based HTML file: 600px, inline styles, an Outlook-safe button, ITS website colors. Before sending, replace <code>https://YOUR-CDN/its-logo.png</code> with the hosted logo and swap <code>{{FirstName}}</code>-style placeholders for your Dynamics 365 personalization fields.</p>
+    <ol class="board" id="board-email" aria-label="Email styles, in your ranked order"></ol>
+  </section>
+
+  <section role="tabpanel" id="team" aria-labelledby="tab-team" hidden>
+    <div class="res">
+      <div class="rbox"><h3>Design concepts <small id="n-concepts">no rankings yet</small></h3><div id="team-concepts"></div></div>
+      <div class="rbox"><h3>Website styles <small id="n-web">no rankings yet</small></h3><div id="team-web"></div></div>
+      <div class="rbox"><h3>Email styles <small id="n-email">no rankings yet</small></h3><div id="team-email"></div></div>
+    </div>
+    <p class="note">Each person's first choice earns 10 points, second 9, and so on down to 1 for last. Ties go alphabetically.</p>
+    <div class="voters" id="voters"></div>
+  </section>
+
+  <section role="tabpanel" id="rankers" aria-labelledby="tab-rankers" hidden>
+    <p class="note">This tab shows when the link ends in ?admin=1. Remove takes a person out of the team results and name tags for everyone, without deleting their row in the Google Sheet; Restore puts them back.</p>
+    <div class="rk-wrap"><table class="rk"><thead><tr><th>Name</th><th>Saved</th><th>Top picks</th><th>Status</th><th></th></tr></thead><tbody id="rk-body"></tbody></table></div>
+    <p class="status" id="rk-msg" role="status"></p>
+    <div class="note" id="rk-keybox" hidden style="display:grid;gap:8px"><b>Connect the removal key</b><span>In the Google Sheet, open Extensions › Apps Script, run <code>showAdminKey</code>, and paste the key from the log here. It is remembered in this browser.</span><span style="display:flex;gap:8px;flex-wrap:wrap"><input id="rk-key" type="password" autocomplete="off" aria-label="Removal key" style="flex:1;min-width:200px;font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--soft);color:var(--ink)"><button type="button" id="rk-keygo" style="padding:8px 14px;border-radius:8px;border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);font-weight:600;cursor:pointer">Connect</button></span></div>
+  </section>
+</div>
+
+<div class="sbar" id="sbar" hidden role="region" aria-label="Save your ranking"><div class="sbar-in"><div class="sbar-txt" role="status"><b id="sbar-h">You changed your ranking</b><span id="sbar-s"></span></div><button type="button" class="sbar-undo" id="sbar-undo">Undo changes</button><button type="button" class="sbar-go" id="sbar-go">Save ranking</button></div></div>
+<div class="nm" id="nm" hidden role="dialog" aria-modal="true" aria-labelledby="nm-title"><form id="nm-form" novalidate><h2 id="nm-title">Who is ranking?</h2><p>Add your name to save your ranking. It shows on the team results next to what you picked.</p><label class="lbl" for="nm-in" style="font-size:12px;font-weight:600">Your name</label><input id="nm-in" autocomplete="name" maxlength="60" placeholder="First and last name"><div class="err" id="nm-err" role="alert"></div><div class="row2"><button type="button" id="nm-cancel">Not now</button><button type="submit">Save ranking</button></div></form></div>
+<div class="em" id="em" hidden role="dialog" aria-modal="true" aria-labelledby="em-title">
+  <div class="em-bar"><button type="button" class="em-x" data-emstep="-1" aria-label="Previous email">‹</button><b id="em-title">Email</b><span class="vw-rank" id="em-pos"></span><button type="button" class="em-x" data-emstep="1" aria-label="Next email">›</button><span class="seg" role="group" aria-label="Width"><button type="button" data-emw="desk" aria-pressed="true">Desktop</button><button type="button" data-emw="phone" aria-pressed="false">Phone</button></span><button type="button" class="b pri" data-emcopy>Copy HTML</button><button type="button" class="em-x" data-emclose aria-label="Close">✕</button></div>
+  <div class="em-stage"><iframe id="em-frame" title="Email preview"></iframe><button type="button" class="vw-nav" data-emstep="-1" aria-label="Previous email" style="left:12px">‹</button><button type="button" class="vw-nav" data-emstep="1" aria-label="Next email" style="right:12px">›</button></div>
+  <p class="vw-cap" id="em-cap"></p>
+</div>
+
+<div class="lb" id="lb" hidden role="dialog" aria-modal="true" aria-labelledby="vw-title">
+  <div class="vw-bar">
+   <div class="vw-l"><button type="button" class="vw-ic" data-lb="prevc" aria-label="Previous style">‹</button><label class="vw-sel"><span class="sr">Style</span><select id="vw-style" aria-label="Style"></select></label><button type="button" class="vw-ic" data-lb="nextc" aria-label="Next style">›</button><span class="vw-rank" id="vw-title"></span></div>
+   <div class="vw-pages" id="vw-pages" role="group" aria-label="Page"></div>
+   <button type="button" class="vw-ic vw-x" data-lb="close" aria-label="Close viewer">✕</button>
+  </div>
+  <div class="vw-bar vw-bar2">
+   <div class="vw-grp"><span class="vw-k">Color style</span><div class="vw-sw" id="vw-colors" role="group" aria-label="Color style"></div></div>
+   <div class="vw-grp"><span class="vw-k">Shape style</span><div class="seg vw-shapes" id="vw-shapes" role="group" aria-label="Shape style"></div></div>
+   <span class="vw-note" id="vw-note"></span>
+  </div>
+  <div class="vw-stage" id="vw-stage"><div class="vw-fit" id="vw-fit"><iframe id="vw-frame" title="Concept page" tabindex="-1"></iframe><img id="vw-img" alt="" hidden></div>
+   <button type="button" class="vw-nav" data-lb="prev" aria-label="Previous page (goes to the previous design after the first page)" style="left:12px">‹</button><button type="button" class="vw-nav" data-lb="next" aria-label="Next page (goes to the next design after the last page)" style="right:12px">›</button></div>
+  <p class="vw-cap" id="vw-cap"></p>
+</div>
+</div>
+
+<div class="fp" id="fp" hidden role="dialog" aria-modal="true" aria-labelledby="fp-title">
+  <div class="fp-bar">
+    <div class="nav"><button type="button" class="x" data-fp="prev" aria-label="Previous style">‹</button><button type="button" class="x" data-fp="next" aria-label="Next style">›</button></div>
+    <h2 id="fp-title">Style</h2><span class="team-pill" id="fp-rank"></span>
+    <span class="sp"></span>
+    <span class="seg" role="group" aria-label="Screen width"><button type="button" data-w="desk" aria-pressed="true">Desktop</button><button type="button" data-w="phone" aria-pressed="false">Phone</button></span>
+    <button type="button" class="x" data-fp="close" aria-label="Close full page">✕</button>
+  </div>
+  <div class="fp-views" id="fp-views"></div>
+  <div class="fp-stage" id="fp-stage"><iframe id="fp-frame" title="ITS ordering site in the chosen style"></iframe><div class="fp-load" id="fp-load">Loading the ITS site…</div><button type="button" class="vw-nav" data-fp="pgprev" aria-label="Previous page (goes to the previous style after the first page)" style="left:12px">‹</button><button type="button" class="vw-nav" data-fp="pgnext" aria-label="Next page (goes to the next style after the last page)" style="right:12px">›</button></div>
+</div>
+
+<script src="theme-engine.js"></script>
+<script>
+const CSPV=[];document.addEventListener('securitypolicyviolation',e=>{CSPV.push(e.violatedDirective+' '+(e.blockedURI||''))});
+const {THEMES,VIEWS,applyTheme,showView}=window.ITS_LINEUP;
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
+const GRIP='<svg width="12" height="16" viewBox="0 0 12 16" fill="currentColor" aria-hidden="true"><circle cx="3" cy="3" r="1.6"/><circle cx="9" cy="3" r="1.6"/><circle cx="3" cy="8" r="1.6"/><circle cx="9" cy="8" r="1.6"/><circle cx="3" cy="13" r="1.6"/><circle cx="9" cy="13" r="1.6"/></svg>';
+
+/* ---------- emails: same content, ten looks, ITS website colors ---------- */
+const EMAIL=[
+ {id:'portal',name:'Portal',sum:'Matches the portal: white card on light grey, red tag, order tracker and a rounded button.',bg:'#f2f4f6',card:'#ffffff',ink:'#231f20',muted:'#6b6d70',line:'#e3e6ea',accent:'#ed3523',aink:'#ffffff',font:"Arial,Helvetica,sans-serif",head:'logo',btn:'round',table:'lines',r:12,soft:'#f6f7f8',repbg:'#2b516c'},
+ {id:'classic',name:'ITS Classic',sum:'The industrialtube.com look: steel-blue band, red rule, framed caps title, offset-shadow button.',bg:'#eef1f4',card:'#ffffff',ink:'#231f20',muted:'#5d6166',line:'#dde3e8',accent:'#ed3523',aink:'#ffffff',font:"Arial,Helvetica,sans-serif",head:'steel',btn:'square',table:'lines',r:0,brand:'#2b516c',frame:1,caps:1,shadow:'#231f20',soft:'#eef3f7',repbg:'#2b516c'},
+ {id:'signal',name:'Signal Red',sum:'A full-width ITS-red band with the order number up top. Strong for status changes.',bg:'#f1f1f1',card:'#ffffff',ink:'#231f20',muted:'#666666',line:'#e2e2e2',accent:'#ed3523',aink:'#ffffff',font:"Arial,Helvetica,sans-serif",head:'band',btn:'square',table:'lines',r:0,soft:'#fdf1f0',repbg:'#231f20',caps:1},
+ {id:'blueprint',name:'Blueprint',sum:'Deep-blue title block, Courier type and dashed rules, like a shop drawing.',bg:'#e6eef4',card:'#ffffff',ink:'#19546e',muted:'#557089',line:'#9fb4cb',accent:'#19546e',aink:'#ffffff',font:"'Courier New',Courier,monospace",head:'navy',btn:'outline',table:'dashed',r:0,soft:'#eef4f9',repbg:'#19546e'},
+ {id:'cert',name:'Mill Cert',sum:'Logo black and white, a boxed table and an issued line. For certs and documents.',bg:'#f4f4f4',card:'#ffffff',ink:'#231f20',muted:'#4a4a4a',line:'#231f20',accent:'#231f20',aink:'#ffffff',font:"'Courier New',Courier,monospace",head:'cert',btn:'square',table:'boxed',r:0,soft:'#ffffff',repbg:'#231f20',caps:1},
+ {id:'night',name:'Night Shift',sum:'Logo-black email with the logo on a white plate and a red button. Stands out in a crowded inbox.',bg:'#141213',card:'#231f20',ink:'#f2f2f2',muted:'#a3a3a3',line:'#3a3536',accent:'#ed3523',aink:'#ffffff',font:"Arial,Helvetica,sans-serif",head:'dark',btn:'round',table:'lines',r:12,repbg:'#ed3523'},
+ {id:'round',name:'Pale Sky',sum:'ITS pale-blue ground, rounded card, steel-blue pill button. Friendly and light.',bg:'#cde7f9',card:'#ffffff',ink:'#1b2a35',muted:'#5d6f7e',line:'#d8e6f1',accent:'#2b516c',aink:'#ffffff',font:"Verdana,Geneva,sans-serif",head:'logo',btn:'pill',table:'striped',r:22,stripe:'#eef6fc',soft:'#eef6fc',repbg:'#2b516c'},
+ {id:'ticket',name:'Shop Ticket',sum:'A grey work-order bar, bold caps and an offset-shadow button. For reminders and alerts.',bg:'#e9e9e9',card:'#ffffff',ink:'#231f20',muted:'#4a4a4a',line:'#d6d6d6',accent:'#ed3523',aink:'#ffffff',font:"Arial,Helvetica,sans-serif",head:'grey',btn:'square',table:'lines',r:0,caps:1,shadow:'#231f20',soft:'#f2f2f2',repbg:'#4a4a4a',cardBorder:'#d6d6d6'},
+ {id:'letter',name:'Plain Letter',sum:'Reads like a note from the account manager: small logo, text first, a link instead of a button.',bg:'#ffffff',card:'#ffffff',ink:'#231f20',muted:'#666666',line:'#e6e6e6',accent:'#2b516c',aink:'#ffffff',font:"Georgia,'Times New Roman',serif",head:'none',btn:'link',table:'lines',r:0},
+ {id:'ledger',name:'Ledger Receipt',sum:'A narrow receipt in Courier with dashed rules and ITS-teal totals. Good for invoices.',bg:'#f2f2f2',card:'#ffffff',ink:'#231f20',muted:'#666666',line:'#bbbbbb',accent:'#457579',aink:'#ffffff',font:"'Courier New',Courier,monospace",head:'receipt',btn:'square',table:'receipt',r:0,width:480,topRule:'#457579'},
+];
+function emailHTML(e){
+  const W=e.width||600,F=e.font,R=e.r||0,pad=e.width?24:32,dark=e.head==='dark',letter=e.head==='none',receipt=e.head==='receipt';
+  const lines=[['2.5" OD x .25" W DOM Mechanical Tubing','Item 377 &middot; 40 pcs @ 20 ft &middot; &plusmn;1/8"','$4,041.60'],['2 x 2 x .25 Square Structural Tube','Item 1204 &middot; 20 pcs @ 24 ft &middot; &plusmn;1/8"','$2,020.80']];
+  const logo=(w=130,plate=false)=>{const img=`<img src="https://YOUR-CDN/its-logo.png" width="${w}" alt="Industrial Tube &amp; Steel" style="display:block;border:0;width:${w}px;height:auto;">`;
+    return plate?`<table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="background:#ffffff;padding:8px 12px;border-radius:${R?8:0}px;">${img}</td></tr></table>`:img};
+  const btn=label=>{
+    if(e.btn==='link')return `<p style="margin:0;font-family:${F};font-size:16px;line-height:24px;"><a href="{{OrderUrl}}" style="color:${e.accent};font-weight:bold;text-decoration:underline;">${label} &rarr;</a></p>`;
+    const out=e.btn==='outline',rad=e.btn==='pill'?'24px':e.btn==='round'?'8px':'0',shadow=e.shadow?`box-shadow:4px 4px 0 ${e.shadow};`:'';
+    return `<!--[if mso]>
+<v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" href="{{OrderUrl}}" style="height:48px;v-text-anchor:middle;width:230px;" arcsize="${e.btn==='pill'?'50%':e.btn==='round'?'17%':'0%'}" ${out?`strokecolor="${e.accent}" strokeweight="2px" fill="f"`:`stroke="f" fillcolor="${e.accent}"`}>
+<w:anchorlock/><center style="color:${out?e.accent:e.aink};font-family:Arial,sans-serif;font-size:15px;font-weight:bold;">${label}</center>
+</v:roundrect>
+<![endif]-->
+<!--[if !mso]><!-->
+<a href="{{OrderUrl}}" style="display:inline-block;background:${out?'transparent':e.accent};color:${out?e.accent:e.aink};${out?`border:2px solid ${e.accent};`:''}font-family:${F};font-size:15px;font-weight:bold;line-height:48px;padding:0 30px;border-radius:${rad};text-decoration:none;${e.caps?'text-transform:uppercase;letter-spacing:2px;':''}${shadow}">${label}</a>
+<!--<![endif]-->`};
+  const label=t=>`<p style="margin:0 0 10px;font-family:${F};font-size:11px;font-weight:bold;letter-spacing:1.5px;text-transform:uppercase;color:${e.muted};">${t}</p>`;
+  const header={
+    logo:`<tr><td style="padding:28px ${pad}px 4px;">${logo()}</td></tr>`,
+    steel:`<tr><td style="background:${e.brand};padding:18px ${pad}px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td>${logo(120,true)}</td><td align="right" style="font-family:${F};font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#cde7f9;">Order SO-48213</td></tr></table></td></tr>
+<tr><td style="background:${e.accent};height:5px;font-size:0;line-height:0;">&nbsp;</td></tr>`,
+    band:`<tr><td style="padding:22px ${pad}px;">${logo()}</td></tr>
+<tr><td style="background:${e.accent};padding:26px ${pad}px;font-family:${F};color:${e.aink};"><p style="margin:0;font-size:12px;letter-spacing:2px;text-transform:uppercase;">Order received</p><p style="margin:6px 0 0;font-size:40px;line-height:44px;font-weight:bold;color:${e.aink};">SO-48213</p><p style="margin:6px 0 0;font-size:16px;color:${e.aink};">We have your order, {{FirstName}}.</p></td></tr>`,
+    navy:`<tr><td style="background:${e.accent};padding:18px ${pad}px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td>${logo(118,true)}</td><td align="right" style="font-family:${F};font-size:11px;color:#cde7f9;line-height:17px;">DWG SO-48213<br>SHEET 1 OF 1<br>ORDER RECEIVED</td></tr></table></td></tr>`,
+    cert:`<tr><td style="padding:26px ${pad}px 0;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:2px solid ${e.ink};"><tr><td style="padding:14px;">${logo(118)}</td><td align="right" style="padding:14px;font-family:${F};font-size:12px;line-height:18px;color:${e.ink};"><strong>ORDER RECEIVED</strong><br>Doc. SO-48213<br>Issued {{OrderDate}}</td></tr></table></td></tr>`,
+    dark:`<tr><td style="padding:28px ${pad}px 6px;">${logo(120,true)}</td></tr>`,
+    grey:`<tr><td style="background:#4a4a4a;padding:14px ${pad}px;font-family:${F};font-size:13px;color:#ffffff;text-transform:uppercase;letter-spacing:2px;">Work order &middot; <span style="color:#ff6a5a;">SO-48213</span></td></tr>
+<tr><td style="padding:24px ${pad}px 0;">${logo()}</td></tr>`,
+    none:`<tr><td style="padding:32px ${pad}px 0;">${logo(96)}</td></tr>`,
+    receipt:`<tr><td align="center" style="padding:28px ${pad}px 6px;">${logo(110)}<p style="margin:12px 0 0;font-family:${F};font-size:12px;letter-spacing:2px;color:${e.muted};">ORDER RECEIVED &middot; SO-48213<br>{{OrderDate}}</p></td></tr>`,
+  }[e.head];
+  const title=e.head==='band'?'':e.frame
+    ?`<table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 16px;border:3px solid ${e.brand};"><tr><td style="padding:4px;"><table role="presentation" cellpadding="0" cellspacing="0" style="border:1px solid ${e.brand};"><tr><td style="padding:10px 22px;font-family:${F};font-size:20px;font-weight:bold;letter-spacing:3px;text-transform:uppercase;color:${e.brand};">Order received</td></tr></table></td></tr></table><h1 style="margin:0 0 10px;font-family:${F};font-size:24px;line-height:30px;color:${e.ink};">Thanks, {{FirstName}}. We have your order.</h1>`
+    :letter?`<h1 style="margin:0 0 12px;font-family:${F};font-size:24px;line-height:30px;font-weight:normal;color:${e.ink};">Hi {{FirstName}},</h1>`
+    :`${e.head==='logo'||dark?`<p style="margin:0 0 10px;"><span style="display:inline-block;background:${e.accent};color:${e.aink};font-family:${F};font-size:11px;font-weight:bold;letter-spacing:1.5px;text-transform:uppercase;padding:5px 11px;border-radius:${R?12:0}px;">Order received</span></p>`:''}<h1 style="margin:0 0 10px;font-family:${F};font-size:${receipt?20:26}px;line-height:${receipt?26:32}px;color:${e.ink};">Thanks, {{FirstName}}. We have your order.</h1>`;
+  const intro=letter?'Your order SO-48213 (PO {{PONumber}}) came through. I am reviewing it now and will send a confirmed ship date within one business day. Cutting and sales tax are calculated by ITS on the invoice.':'ITS is reviewing order SO-48213 (PO {{PONumber}}) now. You will get a confirmed ship date within one business day.';
+  const steps=['Received','Confirmed','Cutting','Shipped','Delivered'];
+  const tracker=letter||receipt?'':`<tr><td class="px" style="padding:4px ${pad}px 22px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>${steps.map((s,i)=>`<td width="20%" style="padding:0 2px;"><div style="height:6px;background:${i?e.line:e.accent};border-radius:${R?3:0}px;font-size:0;line-height:0;">&nbsp;</div><p style="margin:6px 0 0;font-family:${F};font-size:11px;${i?`color:${e.muted};`:`color:${e.ink};font-weight:bold;`}">${s}</p></td>`).join('')}</tr></table></td></tr>`;
+  const row=(c,i)=>{const b=e.table==='boxed'?`border:1px solid ${e.line};`:e.table==='dashed'||e.table==='receipt'?`border-bottom:1px dashed ${e.line};`:`border-bottom:1px solid ${e.line};`,bg=e.table==='striped'&&i%2===0?`background:${e.stripe};`:'';
+    return `<tr>\n<td style="${b}${bg}padding:12px 10px;font-family:${F};font-size:14px;line-height:20px;color:${e.ink};"><strong>${c[0]}</strong><br><span style="color:${e.muted};font-size:13px;">${c[1]}</span></td>\n<td align="right" valign="top" style="${b}${bg}padding:12px 10px;font-family:${F};font-size:14px;line-height:20px;color:${e.ink};white-space:nowrap;">${c[2]}</td>\n</tr>`};
+  const details=[['PO','{{PONumber}}'],['Ship to','{{ShipToCity}}, dock 2'],['Estimated ship','{{ShipDate}}'],['Terms','Net 30']];
+  const detailBlock=receipt?`<tr><td class="px" style="padding:0 ${pad}px 16px;font-family:${F};font-size:13px;line-height:20px;color:${e.ink};">${details.map(([a,b])=>`${a}: ${b}`).join('<br>')}</td></tr>`
+    :`<tr><td class="px" style="padding:6px ${pad}px 22px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${dark?'#2d2829':e.soft||'#f6f7f8'};border-radius:${R?10:0}px;${e.table==='boxed'?`border:1px solid ${e.line};`:''}"><tr>${details.map(([a,b])=>`<td width="25%" valign="top" style="padding:14px 12px;font-family:${F};"><p style="margin:0;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:${e.muted};">${a}</p><p style="margin:4px 0 0;font-size:14px;font-weight:bold;color:${e.ink};">${b}</p></td>`).join('')}</tr></table></td></tr>`;
+  const rep=letter?`Talk soon,<br><strong>{{AccountManagerName}}</strong><br><span style="color:${e.muted};">Inside Sales &middot; Kent, OH &middot; 800-662-9567</span>`
+    :`<table role="presentation" cellpadding="0" cellspacing="0"><tr><td valign="middle" style="padding-right:12px;"><div style="width:44px;height:44px;border-radius:22px;background:${e.repbg||e.accent};color:#ffffff;font-family:Arial,sans-serif;font-size:15px;font-weight:bold;line-height:44px;text-align:center;">DW</div></td><td valign="middle" style="font-family:${F};font-size:14px;line-height:20px;color:${e.ink};"><strong>{{AccountManagerName}}</strong>, your account manager<br><span style="color:${e.muted};">800-662-9567 &middot; Reply to this email any time</span></td></tr></table>`;
+  return `<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="x-apple-disable-message-reformatting">
+<meta name="color-scheme" content="${dark?'dark':'light'}">
+<title>We received your order SO-48213</title>
+<!--[if mso]><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml><![endif]-->
+<style>
+  @media only screen and (max-width:${W+20}px){ .container{width:100%!important} .px{padding-left:20px!important;padding-right:20px!important} }
+</style>
+</head>
+<body style="margin:0;padding:0;background:${e.bg};">
+<!-- ITS email style: ${e.name} -->
+<div style="display:none;max-height:0;overflow:hidden;mso-hide:all;">ITS is reviewing order SO-48213 (PO {{PONumber}}). You will get a confirmed ship date within one business day.</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${e.bg};">
+<tr><td align="center" style="padding:28px 12px;">
+<table role="presentation" class="container" width="${W}" cellpadding="0" cellspacing="0" style="width:${W}px;max-width:100%;background:${e.card};border-radius:${R}px;overflow:hidden;${e.cardBorder?`border:1px solid ${e.cardBorder};`:''}${e.topRule?`border-top:6px solid ${e.topRule};`:''}">
+${header}
+<tr><td class="px" style="padding:${e.head==='band'?24:18}px ${pad}px 14px;font-family:${F};color:${e.ink};${receipt?'text-align:center;':''}">
+${title}
+<p style="margin:0;font-size:15px;line-height:24px;color:${letter?e.ink:e.muted};">${intro}</p>
+</td></tr>
+${tracker}
+<tr><td class="px" style="padding:0 ${pad}px 8px;">
+${label('Your order')}
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;${e.table==='boxed'?`border:1px solid ${e.line};`:''}">
+${lines.map(row).join('\n')}
+<tr>
+<td style="padding:14px 10px;font-family:${F};font-size:13px;color:${e.muted};">Cutting &amp; sales tax are calculated by ITS on the invoice</td>
+<td align="right" style="padding:14px 10px;font-family:${F};font-size:18px;font-weight:bold;color:${receipt?e.accent:e.ink};white-space:nowrap;">$6,062.40</td>
+</tr>
+</table>
+</td></tr>
+${detailBlock}
+<tr><td class="px" align="${receipt?'center':'left'}" style="padding:4px ${pad}px 26px;">
+${btn('View your order')}
+</td></tr>
+<tr><td class="px" style="padding:0 ${pad}px 26px;font-family:${F};font-size:14px;line-height:21px;color:${e.ink};">
+${rep}
+</td></tr>
+<tr><td class="px" style="padding:18px ${pad}px 26px;border-top:1px solid ${e.line};font-family:${F};font-size:12px;line-height:18px;color:${e.muted};${receipt?'text-align:center;':''}">
+<strong style="color:${e.ink};">Industrial Tube &amp; Steel</strong> &middot; Family owned since 1956<br>
+Kent, Ohio &middot; Cincinnati, Ohio &middot; 800-662-9567<br>
+Sent to {{Email}} for {{CompanyName}}. This is a transactional email about your order.
+</td></tr>
+</table>
+</td></tr>
+</table>
+</body>
+</html>`;
+}
+
+const CONCEPTS=[{"id": "proto", "name": "Our prototype", "style": "The ordering prototype as built today: light glass header, ITS orange actions, Figtree type", "build": "Pick OD, wall and length in order beside a live drawing, with My Order alongside"}, {"id": "blueprint", "name": "Mill Blueprint", "style": "ITS deep blue drawing sheet with white title-block cards, mono type, red callouts", "build": "Set OD, wall and length on a cross-section drawing"}, {"id": "cutline", "name": "Cut Line", "style": "Charcoal and ITS red, hazard stripes, condensed caps", "build": "Cut list: see how pieces fall out of 24 ft stock, with drop and scrap"}, {"id": "heritage", "name": "Since 1956", "style": "ITS steel blue, red and silver with the 70-year badge; serif headlines", "build": "Price book: the printed ITS catalog page, with dot leaders and an Add on every line"}, {"id": "catalog", "name": "Spec Catalog", "style": "White and logo black with one ITS red, hairlines, dense like a distributor catalog", "build": "Faceted search: tick OD, wall and spec, then pick from a dense results table"}, {"id": "shopfloor", "name": "Shop Floor Dark", "style": "Logo-black workspace, glowing ITS red, steel photography", "build": "Split configurator: photo, segmented size controls and live weight, stock and lead-time gauges"}, {"id": "ledger", "name": "Ledger", "style": "Accounting white with ITS teal, mono numbers, built for repeat buyers", "build": "Spreadsheet entry: type or paste rows like Excel, with autocomplete on every cell"}, {"id": "wizard", "name": "Guided Wizard", "style": "Soft and rounded: ITS pale sky with steel-blue and red actions", "build": "Wizard: one question at a time, with sizes drawn to scale"}, {"id": "bigtype", "name": "Big Type", "style": "The prototype layout set in oversized condensed type: logo black, white and ITS red", "build": "The prototype build page (steps 1-2-3, drawing, add bar) with giant numerals and values"}, {"id": "matrix", "name": "Size Matrix", "style": "The industrialtube.com look: red strip, steel-blue band, logo plate, framed caps titles, offset-shadow buttons", "build": "Size matrix: every OD against every wall in one grid; stock shows as dots"}, {"id": "chat", "name": "Ask ITS", "style": "Black and white boxes in red, white and navy: flag-stripe band, square cards with hard black shadows, condensed caps", "build": "Conversation: type what you need in plain words; ITS answers with priced lines"}];
+const CSCREENS=[['home','Homepage'],['build','Build your order'],['quick','Quick Order'],['account','My Account'],['checkout','Checkout']];
+/* ---------- state ---------- */
+const LISTS={concepts:CONCEPTS,web:THEMES,email:EMAIL};
+let mine={concepts:CONCEPTS.map(c=>c.id),web:THEMES.map(t=>t.id),email:EMAIL.map(e=>e.id)},teamDocs=[],sortBy='mine';
+let dragging=false,db=null,users=null,uid=null,canSave=true,saveTimer=null,saving=false,again=false,myName='',okMine=null;
+const snap=()=>JSON.parse(JSON.stringify(mine));
+function setName(n){myName=n;try{localStorage.setItem('its-lineup-name',n)}catch(_){}document.querySelectorAll('.who-btn').forEach(b=>{b.hidden=!n;b.textContent=`Ranking as ${n} · change`})}
+let nmPending=null;
+function askName(then){nmPending=then||null;const nm=document.getElementById('nm'),i=document.getElementById('nm-in');nm.hidden=false;document.getElementById('nm-err').textContent='';i.value=myName;setTimeout(()=>i.focus(),30)}
+function closeName(){document.getElementById('nm').hidden=true;nmPending=null}
+const sanitize=(k,a)=>{const ids=LISTS[k].map(x=>x.id),o=(Array.isArray(a)?a:[]).filter((x,i,s)=>ids.includes(x)&&s.indexOf(x)===i);ids.forEach(x=>{o.includes(x)||o.push(x)});return o};
+function teamOrder(k){const L=LISTS[k],N=L.length,docs=teamDocs.filter(d=>Array.isArray(d[k])),pts={};L.forEach(x=>pts[x.id]=0);docs.forEach(d=>sanitize(k,d[k]).forEach((id,i)=>pts[id]+=N-i));
+  return {n:docs.length,rows:L.map(x=>({id:x.id,name:x.name,pts:pts[x.id]})).sort((a,b)=>b.pts-a.pts||(docs.length?a.name.localeCompare(b.name):0))}}
+function rankers(k,id){return teamDocs.filter(d=>Array.isArray(d[k])).map(d=>({name:d.name.trim(),me:isMe(d),pos:sanitize(k,d[k]).indexOf(id)+1})).sort((a,b)=>a.pos-b.pos||a.name.localeCompare(b.name))}
+const nameTags=(k,id)=>{const l=rankers(k,id);return l.length?`<div class="tags" aria-label="Who ranked it where">${l.map(x=>`<span class="nt${x.pos===1?' top':x.pos<=3?' hi':''}${x.me?' me':''}" title="${esc(x.name)} ranked it #${x.pos}"><b>#${x.pos}</b>${esc(x.name)}${x.me?' (you)':''}</span>`).join('')}</div>`:''};
+const teamRank=(k,id)=>{const t=teamOrder(k);return t.n?t.rows.findIndex(r=>r.id===id)+1:0};
+const setStatus=(t,ok)=>document.querySelectorAll('[data-status]').forEach(s=>{s.textContent=t;s.className='status'+(ok?' ok':'')});
+
+/* ---------- render ---------- */
+function shotURL(t,v){return `shots/${t}-${v}.jpg`}
+function webCard(t,i,n){
+  const tr=teamRank('web',t.id);
+  return `<li class="card" data-id="${t.id}">
+   <div class="rankcol"><span class="rankno" aria-label="Rank ${i+1}">${i+1}</span>${sortBy==='mine'?`<button type="button" class="grip" data-grip aria-label="Drag ${esc(t.name)} to rank it; arrow keys move it">${GRIP}</button>
+    <span class="mv"><button type="button" data-mv="-1" aria-label="Move ${esc(t.name)} up" ${i?'':'disabled'}>▲</button><button type="button" data-mv="1" aria-label="Move ${esc(t.name)} down" ${i<n-1?'':'disabled'}>▼</button></span>`:''}</div>
+   <div class="meta"><h3>${esc(t.name)}</h3><p>${esc(t.sum)}</p>
+    <div class="chips">${t.sw.map(c=>`<span class="chip" style="background:${c}" title="${c}"></span>`).join('')}</div>
+    <div class="facts"><span><b>Type</b>${esc(t.fonts)}</span><span><b>Feel</b>${esc(t.feel)}</span></div>
+    ${tr?`<span class="team-pill">Team #${tr}${sortBy==='mine'?'':' · you #'+(mine.web.indexOf(t.id)+1)}</span>`:''}${nameTags('web',t.id)}
+    <button type="button" class="open" data-open="${t.id}:home">Open full site in this style ↗</button></div>
+   <div class="strip"><div class="strip-in">${VIEWS.map(v=>`<button type="button" class="shot" data-open="${t.id}:${v.id}" aria-label="Open ${esc(v.name)} in ${esc(t.name)}"><img src="${shotURL(t.id,v.id)}" alt="" loading="lazy" width="300" height="202"><span>${esc(v.name)}<small class="${v.kind==='Page'?'':'flow'}">${v.kind}</small></span></button>`).join('')}</div></div>
+  </li>`;
+}
+function emailCard(e,i,n){
+  const tr=teamRank('email',e.id);
+  return `<li class="ecard" data-id="${e.id}">
+   <div class="rankcol"><span class="rankno">${i+1}</span>${sortBy==='mine'?`<button type="button" class="grip" data-grip aria-label="Drag ${esc(e.name)} to rank it; arrow keys move it">${GRIP}</button><span class="mv"><button type="button" data-mv="-1" aria-label="Move ${esc(e.name)} up" ${i?'':'disabled'}>▲</button><button type="button" data-mv="1" aria-label="Move ${esc(e.name)} down" ${i<n-1?'':'disabled'}>▼</button></span>`:''}</div>
+   <div class="eprev"><div class="eprev-box" data-emopen="${e.id}" role="button" tabindex="0" aria-label="View the ${esc(e.name)} email full size"><iframe data-email="${e.id}" title="${esc(e.name)} email preview" tabindex="-1" scrolling="no"></iframe></div><button type="button" class="b" data-emopen="${e.id}">View full size</button></div>
+   <div class="ebody"><div class="ehead"><h3>${esc(e.name)}</h3><p>${esc(e.sum)}</p><span class="chips">${[e.brand||e.bg,e.card,e.accent,e.ink].map(c=>`<span class="chip" style="background:${c}" title="${c}"></span>`).join('')}</span></div>
+    <div class="traits"><span>${esc(e.font.split(',')[0].replace(/'/g,''))}</span><span>${e.width||600}px wide</span><span>${{round:'Rounded button',pill:'Pill button',square:'Square button',outline:'Outline button',link:'Text link'}[e.btn]}</span><span>${{lines:'Ruled table',boxed:'Boxed table',striped:'Striped table',dashed:'Dashed rules',receipt:'Receipt rules'}[e.table]}</span>${tr?`<span>Team #${tr}</span>`:''}</div>${nameTags('email',e.id)}
+    <div class="acts"><button type="button" class="b pri" data-copy="${e.id}">Copy HTML</button><button type="button" class="b" data-show="${e.id}" aria-expanded="false" aria-controls="code-${e.id}">Show code</button><span class="done" data-done="${e.id}" role="status"></span></div>
+    <pre class="code" id="code-${e.id}" hidden tabindex="0"></pre></div></li>`;
+}
+function conceptCard(c,i,n){
+  const tr=teamRank('concepts',c.id);
+  return `<li class="card" data-id="${c.id}">
+   <div class="rankcol"><span class="rankno" aria-label="Rank ${i+1}">${i+1}</span>${sortBy==='mine'?`<button type="button" class="grip" data-grip aria-label="Drag ${esc(c.name)} to rank it; arrow keys move it">${GRIP}</button>
+    <span class="mv"><button type="button" data-mv="-1" aria-label="Move ${esc(c.name)} up" ${i?'':'disabled'}>▲</button><button type="button" data-mv="1" aria-label="Move ${esc(c.name)} down" ${i<n-1?'':'disabled'}>▼</button></span>`:''}</div>
+   <div class="meta"><h3>${esc(c.name)}</h3><p>${esc(c.style)}</p>
+    <div class="mech"><div><b>Build your order</b>${esc(c.build)}</div></div>
+    <button type="button" class="open" data-lb-open="${c.id}:home">Open in the viewer ↗</button>
+    ${tr?`<span class="team-pill">Team #${tr}${sortBy==='mine'?'':' · you #'+(mine.concepts.indexOf(c.id)+1)}</span>`:''}${nameTags('concepts',c.id)}</div>
+   <div class="cstrip"><div class="cstrip-in">${CSCREENS.map(([s,label])=>`<button type="button" class="cshot" data-lb-open="${c.id}:${s}" aria-label="View ${esc(label)} for ${esc(c.name)} full size"><img src="concepts/${c.id}-${s}-t.jpg?v=7" alt="" loading="lazy" width="384" height="240"><b>${label}</b></button>`).join('')}</div></div>
+  </li>`;
+}
+function order(k){if(sortBy==='team'){const t=teamOrder(k);if(t.n)return t.rows.map(r=>r.id)}return mine[k]}
+let renderBoard=function(k){
+  const el=document.getElementById('board-'+k),ids=order(k),L=LISTS[k];
+  const open=k==='email'?[...el.querySelectorAll('pre.code:not([hidden])')].map(p=>p.id):[];
+  el.innerHTML=ids.map((id,i)=>({web:webCard,email:emailCard,concepts:conceptCard})[k](L.find(x=>x.id===id),i,ids.length)).join('');
+  open.forEach(pid=>{const p=document.getElementById(pid);if(p){const id=pid.slice(5);p.textContent=emailHTML(EMAIL.find(x=>x.id===id));p.hidden=false;const b=el.querySelector(`[data-show="${id}"]`);b.textContent='Hide code';b.setAttribute('aria-expanded','true')}});
+}
+const PREVIEW_LOGO=new URL('concepts/its-logo.png',location.href).href;
+const previewHTML=e=>emailHTML(e).split('https://YOUR-CDN/its-logo.png').join(PREVIEW_LOGO);
+function fillPreviews(){document.querySelectorAll('iframe[data-email]').forEach(f=>{if(f.dataset.done)return;f.dataset.done='1';const e=EMAIL.find(x=>x.id===f.dataset.email);f.srcdoc=previewHTML(e)})}
+function renderTeam(){
+  ['concepts','web','email'].forEach(k=>{const t=teamOrder(k),box=document.getElementById('team-'+k),max=Math.max(1,...t.rows.map(r=>r.pts));
+    document.getElementById('n-'+k).textContent=t.n?`${t.n} ${t.n===1?'person':'people'}`:'no rankings yet';
+    box.innerHTML=t.rows.map((r,i)=>`<div class="tr"><span class="p">${t.n?i+1:'–'}</span><span class="t">${esc(r.name)}</span><span class="meter"><i style="width:${Math.round(r.pts/max*100)}%"></i></span><span class="pts">${r.pts}</span>${nameTags(k,r.id)}</div>`).join('')});
+  renderVoters();
+}
+function renderVoters(){const box=document.getElementById('voters');box.textContent='';if(!teamDocs.length)return;const l=document.createElement('span');l.textContent='Ranked by:';box.append(l);
+  teamDocs.forEach(d=>{const w=document.createElement('span');w.textContent=d.name.trim()+(isMe(d)?' (you)':'');box.append(w)})}
+function renderAll(){renderBoard('concepts');renderBoard('web');renderBoard('email');renderTeam()}
+const _rb=renderBoard;renderBoard=function(k){_rb(k);if(k==='email')fillPreviews()};
+
+/* ---------- saving ---------- */
+function changed(k){try{localStorage.setItem('its-lineup2',JSON.stringify(mine))}catch(_){}renderBoard(k);dirty=JSON.stringify(mine)!==JSON.stringify(okMine);bar(dirty?'dirty':'hide')}
+let dirty=false,hasSaved=false,barT=null,allDocs=[],hiddenIds=new Set(),canManage=false;
+const SHEET_URL='https://script.google.com/macros/s/AKfycbxq5NbX1mkiSDYwZ-UQ572DKMWOGAzxGtV_EIDOX4JfUF5_W5pBZqn4vBUNk_FXIkcmLA/exec';
+const rid=n=>{const a=new Uint8Array(n);crypto.getRandomValues(a);return [...a].map(b=>b.toString(16).padStart(2,'0')).join('')};
+let me=null;try{me=JSON.parse(localStorage.getItem('its-rank-me')||'null')}catch(_){}
+if(!me||!/^[a-f0-9]{16,64}$/.test(me.id||'')||!(me.secret&&me.secret.length>=32)){me={id:rid(12),secret:rid(24)};try{localStorage.setItem('its-rank-me',JSON.stringify(me))}catch(_){}}
+const isMe=d=>d.__id==='s:'+me.id;
+let adminKey=null,sheetLoaded=false,sheetErr=false;
+async function sheet(body){if(!SHEET_URL)throw new Error('no_sheet');const res=await fetch(SHEET_URL,{method:'POST',headers:{'content-type':'text/plain;charset=utf-8'},body:JSON.stringify(body)});return res.json()}
+async function loadSheet(){try{const j=await sheet(adminKey?{action:'list',key:adminKey}:{action:'list'});if(!j||!j.ok)throw 0;sheetErr=false;
+  allDocs=j.rows.map(x=>({__id:'s:'+x.id,name:x.name,concepts:x.concepts,web:x.web,email:x.email,updatedAt:x.updatedAt})).filter(d=>typeof d.name==='string'&&d.name.trim());
+  hiddenIds=new Set(j.rows.filter(x=>x.hidden).map(x=>'s:'+x.id));
+  if(!sheetLoaded){sheetLoaded=true;const mineRow=allDocs.find(isMe);if(mineRow){hasSaved=true;if(!myName)setName(mineRow.name.trim());if(!dirty){mine.concepts=sanitize('concepts',mineRow.concepts);mine.web=sanitize('web',mineRow.web);mine.email=sanitize('email',mineRow.email);okMine=snap()}}}
+  if(adminKey&&j.admin===false){adminKey=null;try{localStorage.removeItem('its-rank-admin')}catch(_){}document.getElementById('rk-keybox').hidden=false;document.getElementById('rk-msg').textContent='The removal key no longer matches the sheet. Paste the current key below.'}
+  applyHidden()}catch(_){sheetErr=true;setStatus('Could not reach the survey sheet. Rankings will load when it is back.')}}
+function applyHidden(){teamDocs=allDocs.filter(d=>!hiddenIds.has(d.__id));renderTeam();renderRankers();if(!dragging){renderBoard('concepts');renderBoard('web');renderBoard('email')}}
+function renderRankers(){if(!canManage)return;const tb=document.getElementById('rk-body'),nm=(k,id)=>(LISTS[k].find(x=>x.id===id)||{}).name||'';
+  const rows=allDocs.slice().sort((a,b)=>String(b.updatedAt||'').localeCompare(String(a.updatedAt||'')));
+  tb.innerHTML=rows.length?rows.map(d=>{const off=hiddenIds.has(d.__id),when=d.updatedAt?new Date(d.updatedAt).toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'';
+    return `<tr class="${off?'off':''}"><td><b>${esc(d.name.trim())}</b>${isMe(d)?' <span class="mut">(you)</span>':''}</td><td class="mut">${esc(when)}</td>`+
+    `<td class="mut">${['concepts','web','email'].map(k=>Array.isArray(d[k])&&d[k].length?esc(nm(k,sanitize(k,d[k])[0])):'').filter(Boolean).join(' · ')}</td>`+
+    `<td>${off?'Removed':'Counted'}</td><td style="text-align:right"><button type="button" class="${off?'':'rm'}" data-rk="${esc(d.__id)}" data-off="${off?1:0}">${off?'Restore':'Remove'}</button></td></tr>`}).join('')
+    :'<tr><td colspan="5" class="mut">Nobody has saved a ranking yet.</td></tr>'}
+document.getElementById('rk-body').addEventListener('click',async e=>{const b=e.target.closest('[data-rk]');if(!b)return;const m=document.getElementById('rk-msg');if(!adminKey){m.textContent='Removing needs the removal key. The page owner adds it below.';return}
+  const id=b.dataset.rk.replace(/^s:/,''),off=b.dataset.off==='1';b.disabled=true;
+  try{const j=await sheet({action:off?'show':'hide',id,key:adminKey});if(!j||!j.ok)throw 0;m.textContent='';await loadSheet()}catch(_){m.textContent='Could not change that just now. Try again.';b.disabled=false}});
+document.getElementById('rk-keygo').addEventListener('click',async()=>{const v=document.getElementById('rk-key').value.trim(),m=document.getElementById('rk-msg');if(v.length<20){m.textContent='Paste the whole key.';return}
+  try{const j=await sheet({action:'list',key:v});if(!j||!j.admin){m.textContent='That key does not match the sheet.';return}try{localStorage.setItem('its-rank-admin',v)}catch(_){}document.getElementById('rk-keybox').hidden=true;adminKey=v;document.getElementById('rk-key').value='';m.textContent='Removal key connected.';loadSheet()}
+  catch(_){m.textContent='Could not connect the key just now.'}});
+function bar(st,msg){const b=document.getElementById('sbar'),h=document.getElementById('sbar-h'),t=document.getElementById('sbar-s'),go=document.getElementById('sbar-go'),un=document.getElementById('sbar-undo');clearTimeout(barT);
+  if(st==='hide'){b.hidden=true;document.body.classList.remove('has-bar');return}b.hidden=false;document.body.classList.add('has-bar');b.classList.toggle('ok',st==='saved');go.disabled=st==='saving';un.hidden=st==='saved'||st==='saving';
+  if(st==='dirty'){h.textContent='You changed your ranking';t.textContent=myName?`Press Save to update the team results as ${myName}.`:'Press Save, add your name, and your ranking joins the team results.';go.textContent='Save ranking'}
+  if(st==='saving'){h.textContent='Saving…';t.textContent='';go.textContent='Saving…'}
+  if(st==='saved'){h.textContent='Saved ✓';t.textContent=`Thanks ${myName}. Your ranking is in the team results.`;go.textContent='See team results';barT=setTimeout(()=>{if(!dirty)bar('hide')},7000)}
+  if(st==='error'){h.textContent='Not saved';t.textContent=msg;go.textContent='Try again'}}
+async function saveNow(){if(!myName){askName(saveNow);return}if(!SHEET_URL){bar('error','The survey sheet is not connected yet.');return}
+  bar('saving');if(await save()){okMine=snap();dirty=false;hasSaved=true;bar('saved')}}
+async function save(){if(saving)return false;saving=true;let ok=false;
+  try{const j=await sheet({action:'save',id:me.id,secret:me.secret,name:myName,concepts:mine.concepts,web:mine.web,email:mine.email});
+    if(j&&j.ok){ok=true;setStatus('Saved to the team results',true);loadSheet()}else bar('error',j&&j.error==='full'?'The survey is full.':'Could not save just now. Try again.')}
+  catch(err){const v=CSPV.filter(x=>/google/.test(x));bar('error','Could not save just now. Details: '+(v.length?'blocked by page security ('+[...new Set(v)].join('; ')+')':(err&&(err.name+': '+err.message))||'unknown'))}
+  saving=false;return ok}
+
+/* ---------- drag, arrows, keyboard ---------- */
+function move(k,id,to){const a=mine[k],i=a.indexOf(id);to=Math.max(0,Math.min(a.length-1,to));if(i===to)return false;a.splice(i,1);a.splice(to,0,id);return true}
+['concepts','web','email'].forEach(k=>{
+  const ol=document.getElementById('board-'+k);let drag=null;
+  ol.addEventListener('click',e=>{const b=e.target.closest('[data-mv]');if(!b)return;const id=b.closest('[data-id]').dataset.id;if(move(k,id,mine[k].indexOf(id)+(+b.dataset.mv))){changed(k);const nb=ol.querySelector(`[data-id="${id}"] [data-mv="${b.dataset.mv}"]`);(nb&&!nb.disabled?nb:ol.querySelector(`[data-id="${id}"] [data-grip]`)).focus()}});
+  ol.addEventListener('keydown',e=>{const g=e.target.closest('[data-grip]');if(!g||!['ArrowUp','ArrowDown'].includes(e.key))return;e.preventDefault();const id=g.closest('[data-id]').dataset.id;if(move(k,id,mine[k].indexOf(id)+(e.key==='ArrowUp'?-1:1))){changed(k);ol.querySelector(`[data-id="${id}"] [data-grip]`).focus()}});
+  ol.addEventListener('pointerdown',e=>{const g=e.target.closest('[data-grip]');if(!g||sortBy!=='mine')return;e.preventDefault();const li=g.closest('[data-id]');g.setPointerCapture(e.pointerId);drag={li,y:e.clientY,id:li.dataset.id};li.classList.add('drag');dragging=true});
+  ol.addEventListener('pointermove',e=>{if(!drag)return;const li=drag.li;li.style.transform=`translateY(${e.clientY-drag.y}px)`;
+    const r=li.getBoundingClientRect(),mid=r.top+r.height/2;let before=null;for(const x of ol.children){if(x===li)continue;const b=x.getBoundingClientRect();if(mid<b.top+b.height/2){before=x;break}}
+    if((before&&li.nextElementSibling!==before)||(!before&&ol.lastElementChild!==li)){const t0=li.getBoundingClientRect().top;ol.insertBefore(li,before);const t1=li.getBoundingClientRect().top;drag.y+=t1-t0;li.style.transform=`translateY(${e.clientY-drag.y}px)`;
+      [...ol.children].forEach((x,i)=>{const n=x.querySelector('.rankno');if(n)n.textContent=i+1})}
+    const vh=innerHeight;if(e.clientY<80)scrollBy(0,-14);else if(e.clientY>vh-80)scrollBy(0,14)});
+  const end=()=>{if(!drag)return;dragging=false;const id=drag.id;drag.li.classList.remove('drag');drag.li.style.transform='';drag=null;const o=[...ol.children].map(x=>x.dataset.id);
+    if(o.join()!==mine[k].join()){mine[k]=o;changed(k)}else renderBoard(k);const g=ol.querySelector(`[data-id="${id}"] [data-grip]`);if(g)g.focus()};
+  ol.addEventListener('pointerup',end);ol.addEventListener('pointercancel',end);
+});
+document.querySelectorAll('[data-sort]').forEach(b=>b.addEventListener('click',()=>{sortBy=b.dataset.sort;document.querySelectorAll('[data-sort]').forEach(x=>x.setAttribute('aria-pressed',String(x.dataset.sort===sortBy)));
+  if(sortBy==='team'&&!teamOrder('concepts').n&&!teamOrder('web').n)setStatus('No team rankings yet, so this shows your order.');renderBoard('concepts');renderBoard('web');renderBoard('email')}));
+
+/* ---------- emails: copy and show ---------- */
+document.getElementById('board-email').addEventListener('click',async ev=>{
+  const s=ev.target.closest('[data-show]'),c=ev.target.closest('[data-copy]');
+  if(s){const pre=document.getElementById('code-'+s.dataset.show);if(!pre.textContent)pre.textContent=emailHTML(EMAIL.find(x=>x.id===s.dataset.show));pre.hidden=!pre.hidden;s.setAttribute('aria-expanded',String(!pre.hidden));s.textContent=pre.hidden?'Show code':'Hide code';return}
+  if(c){const e=EMAIL.find(x=>x.id===c.dataset.copy),html=emailHTML(e),d=document.querySelector(`[data-done="${e.id}"]`);
+    try{await navigator.clipboard.writeText(html);d.textContent='Copied'}
+    catch(_){const pre=document.getElementById('code-'+e.id);pre.textContent=html;pre.hidden=false;const r=document.createRange();r.selectNodeContents(pre);const sel=getSelection();sel.removeAllRanges();sel.addRange(r);d.textContent='Selected: press Ctrl+C'}
+    setTimeout(()=>{d.textContent=''},2600)}
+});
+
+/* ---------- full page: the live site in the chosen style ---------- */
+const fp=document.getElementById('fp'),frame=document.getElementById('fp-frame'),load=document.getElementById('fp-load');
+let fpT='classic',fpV='home',siteReady=null,lastFocus=null,fpTok=0;
+document.getElementById('fp-views').innerHTML=VIEWS.map(v=>`<button type="button" data-view="${v.id}" aria-pressed="false">${esc(v.name)}<small>${v.kind==='Page'?'page':'flow'}</small></button>`).join('');
+function site(){if(siteReady)return siteReady;load.hidden=false;
+  siteReady=new Promise(res=>{frame.addEventListener('load',async()=>{const w=frame.contentWindow;for(let i=0;i<80&&typeof w.render!=='function';i++)await new Promise(r=>setTimeout(r,100));res(w)},{once:true});frame.src='site.html?lineup=1'});return siteReady}
+async function fpShow(){const tok=++fpTok,T=THEMES.find(t=>t.id===fpT),V=VIEWS.find(v=>v.id===fpV);
+  document.getElementById('fp-title').textContent=T.name;const r=sortBy==='team'?teamRank('web',fpT):mine.web.indexOf(fpT)+1;document.getElementById('fp-rank').textContent=`${sortBy==='team'?'Team':'Your'} #${r} · ${V.name}`;
+  document.querySelectorAll('[data-view]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.view===fpV)));
+  load.hidden=false;load.textContent='Loading the ITS site…';const w=await site();if(tok!==fpTok)return;
+  try{applyTheme(w.document,fpT);await showView(w,fpV)}catch(e){console.warn(e)}if(tok===fpTok)load.hidden=true}
+function openFP(t,v){fpT=t;fpV=v;lastFocus=document.activeElement;fp.hidden=false;document.documentElement.style.overflow='hidden';fp.querySelector('[data-fp="close"]').focus();fpShow()}
+function closeFP(){fp.hidden=true;document.documentElement.style.overflow='';if(lastFocus)lastFocus.focus()}
+document.addEventListener('click',e=>{const o=e.target.closest('[data-open]');if(o){const [t,v]=o.dataset.open.split(':');openFP(t,v)}});
+fp.addEventListener('click',e=>{const a=e.target.closest('[data-fp]'),v=e.target.closest('[data-view]'),w=e.target.closest('[data-w]');
+  if(v){fpV=v.dataset.view;fpShow()}
+  if(w){document.querySelectorAll('[data-w]').forEach(x=>x.setAttribute('aria-pressed',String(x===w)));document.getElementById('fp-stage').classList.toggle('phone',w.dataset.w==='phone')}
+  if(a){const k=a.dataset.fp;if(k==='close')closeFP();else if(k==='pgnext')fpStep(1);else if(k==='pgprev')fpStep(-1);else{const ids=order('web'),i=ids.indexOf(fpT);fpT=ids[(i+(k==='next'?1:ids.length-1))%ids.length];fpShow()}}});
+function fpStep(d){const n=VIEWS.length,i=VIEWS.findIndex(v=>v.id===fpV)+d;if(i>=0&&i<n){fpV=VIEWS[i].id;fpShow();return}const ids=order('web');fpT=ids[(ids.indexOf(fpT)+d+ids.length)%ids.length];fpV=VIEWS[d>0?0:n-1].id;fpShow()}
+document.addEventListener('keydown',e=>{if(fp.hidden)return;if(e.key==='Escape')closeFP();if(e.key==='ArrowRight'){e.preventDefault();fpStep(1)}if(e.key==='ArrowLeft'){e.preventDefault();fpStep(-1)}
+  if(e.key==='Tab'){const f=[...fp.querySelectorAll('button,iframe')].filter(x=>!x.disabled&&x.offsetParent);if(!f.length)return;const a=f[0],z=f[f.length-1];if(e.shiftKey&&document.activeElement===a){e.preventDefault();z.focus()}else if(!e.shiftKey&&document.activeElement===z){e.preventDefault();a.focus()}}});
+
+/* ---------- email full-size viewer ---------- */
+const em=document.getElementById('em');let emId=null,emFocus=null;
+function emShow(){const e=EMAIL.find(x=>x.id===emId),ids=order('email'),i=ids.indexOf(emId);document.getElementById('em-title').textContent=e.name;document.getElementById('em-pos').textContent=`${sortBy==='team'?'Team':'Your'} #${i+1} of ${ids.length}`;document.getElementById('em-cap').textContent=`${e.sum} · › next: ${EMAIL.find(x=>x.id===ids[(i+1)%ids.length]).name}`;document.getElementById('em-frame').srcdoc=previewHTML(e)}
+function emStep(d){const ids=order('email');emId=ids[(ids.indexOf(emId)+d+ids.length)%ids.length];emShow()}
+function emOpen(id,from){emId=id;emFocus=from;emShow();em.hidden=false;document.documentElement.style.overflow='hidden';em.querySelector('[data-emclose]').focus()}
+function emClose(){em.hidden=true;document.documentElement.style.overflow='';if(emFocus)emFocus.focus()}
+document.addEventListener('click',e=>{const o=e.target.closest('[data-emopen]');if(o)emOpen(o.dataset.emopen,o)});
+document.addEventListener('keydown',e=>{const o=e.target.closest&&e.target.closest('.eprev-box[data-emopen]');if(o&&(e.key==='Enter'||e.key===' ')){e.preventDefault();emOpen(o.dataset.emopen,o)}if(!em.hidden){if(e.key==='Escape')emClose();if(e.key==='ArrowRight'){e.preventDefault();emStep(1)}if(e.key==='ArrowLeft'){e.preventDefault();emStep(-1)}}});
+em.addEventListener('click',async e=>{if(e.target.closest('[data-emclose]')){emClose();return}const st=e.target.closest('[data-emstep]');if(st){emStep(+st.dataset.emstep);return}const w=e.target.closest('[data-emw]');if(w){em.querySelectorAll('[data-emw]').forEach(x=>x.setAttribute('aria-pressed',String(x===w)));em.classList.toggle('phone',w.dataset.emw==='phone');return}
+  const c=e.target.closest('[data-emcopy]');if(c){const html=emailHTML(EMAIL.find(x=>x.id===emId));try{await navigator.clipboard.writeText(html);c.textContent='Copied'}catch(_){c.textContent='Use Show code to copy'}setTimeout(()=>{c.textContent='Copy HTML'},2200)}});
+
+/* ---------- concept viewer: live pages, switch style, page, color style and shape ---------- */
+const PALETTES=[
+ {id:'as',name:'As designed',sw:null},
+ {id:'its',name:'ITS red + steel',sw:['#ed3523','#2b516c'],v:{accent:'#ed3523','accent-soft':'#fde4e1','accent-tint':'#fff6f5',brand:'#2b516c','brand-soft':'#e4eef6'}},
+ {id:'steel',name:'Steel blue',sw:['#2b516c','#19546e'],v:{accent:'#2b516c','accent-soft':'#e4eef6','accent-tint':'#f3f8fc',brand:'#19546e','brand-soft':'#e3eef6'}},
+ {id:'char',name:'Charcoal + red',sw:['#ed3523','#231f20'],v:{accent:'#ed3523','accent-soft':'#fde4e1','accent-tint':'#fff6f5',brand:'#231f20','brand-soft':'#efefef'}},
+ {id:'teal',name:'ITS teal',sw:['#457579','#2f5558'],v:{accent:'#457579','accent-soft':'#e3f0f0','accent-tint':'#f2f8f8',brand:'#2f5558','brand-soft':'#e3f0f0'}},
+];
+const SHAPES=[
+ {id:'as',name:'As designed'},
+ {id:'square',name:'Square',v:{r:'0px',rb:'0px',rc:'0px'},ic:'<svg width="14" height="14"><rect x="1.5" y="1.5" width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>'},
+ {id:'soft',name:'Soft',v:{r:'10px',rb:'6px',rc:'6px'},ic:'<svg width="14" height="14"><rect x="1.5" y="1.5" width="11" height="11" rx="3" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>'},
+ {id:'round',name:'Rounded',v:{r:'22px',rb:'999px',rc:'14px'},ic:'<svg width="14" height="14"><rect x="1.5" y="1.5" width="11" height="11" rx="5.5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>'},
+];
+const lb=document.getElementById('lb'),vwFrame=document.getElementById('vw-frame'),vwImg=document.getElementById('vw-img'),vwFit=document.getElementById('vw-fit'),vwStage=document.getElementById('vw-stage');
+let vw={c:null,s:0,pal:'as',shape:'as',focus:null};
+try{const v=JSON.parse(localStorage.getItem('its-lineup-vw')||'null');if(v){vw.pal=v.pal||'as';vw.shape=v.shape||'as'}}catch(_){}
+document.getElementById('vw-colors').innerHTML=PALETTES.map(p=>`<button type="button" data-pal="${p.id}" aria-pressed="false">${p.sw?`<i style="background:linear-gradient(135deg,${p.sw[0]} 50%,${p.sw[1]} 50%)"></i>`:'<i style="background:conic-gradient(#ed3523,#2b516c,#457579,#231f20,#ed3523)"></i>'}${p.name}</button>`).join('');
+document.getElementById('vw-shapes').innerHTML=SHAPES.map(p=>`<button type="button" data-shape="${p.id}" aria-pressed="false">${p.ic||''}${p.name}</button>`).join('');
+function vwFitScale(){const W=vwStage.clientWidth-20,H=vwStage.clientHeight-20;const k=Math.min(W/1440,H/900,1);vwFit.style.transform=`scale(${k})`;vwFit.style.margin=`${-(900-900*k)/2}px ${-(1440-1440*k)/2}px`}
+addEventListener('resize',()=>{if(!lb.hidden)vwFitScale()});
+const lum=h=>{h=h.trim().replace('#','');if(h.length<6)return 1;const n=[0,2,4].map(i=>parseInt(h.slice(i,i+2),16)/255);return .2126*n[0]+.7152*n[1]+.0722*n[2]};
+function vwApply(){
+  const d=vwFrame.contentDocument;if(!d||!d.documentElement)return;
+  let st=d.getElementById('vw-ov');if(!st){st=d.createElement('style');st.id='vw-ov';d.head.appendChild(st)}
+  const cs=getComputedStyle(d.documentElement),darkBg=lum(cs.getPropertyValue('--bg'))<.25,hdrIsBrand=lum(cs.getPropertyValue('--hdr-bg'))<.45&&!darkBg;
+  const P=PALETTES.find(p=>p.id===vw.pal),S=SHAPES.find(p=>p.id===vw.shape),v={};
+  if(P&&P.v){Object.assign(v,P.v);if(darkBg){delete v.brand;delete v['brand-soft'];v['accent-soft']='rgba(255,255,255,.12)';v['accent-tint']='rgba(255,255,255,.06)'}if(hdrIsBrand){v['hdr-bg']=P.v.brand;v['hdr-ink']='#ffffff'}}
+  if(S&&S.v)Object.assign(v,S.v);
+  st.textContent=':root{'+Object.entries(v).map(([k,x])=>`--${k}:${x}`).join(';')+'}';
+}
+function vwShow(){
+  const c=CONCEPTS.find(x=>x.id===vw.c),[s,label]=CSCREENS[vw.s],ids=order('concepts');
+  document.getElementById('vw-style').value=c.id;
+  document.getElementById('vw-title').textContent=`${sortBy==='team'?'Team':'Your'} #${ids.indexOf(c.id)+1} of ${ids.length}`;
+  document.querySelectorAll('#vw-pages [data-pg]').forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.pg===vw.s)));
+  document.querySelectorAll('[data-pal]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.pal===vw.pal)));
+  document.querySelectorAll('[data-shape]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.shape===vw.shape)));
+  const proto=c.id==='proto';
+  document.querySelectorAll('[data-pal],[data-shape]').forEach(b=>b.disabled=proto);
+  document.getElementById('vw-note').textContent=proto?'Our prototype is shown as built. Try its colour schemes live in the Website styles tab.':'';
+  const ix=ids.indexOf(c.id),last=vw.s===CSCREENS.length-1,first=vw.s===0;
+  document.getElementById('vw-cap').textContent=`${c.name} · ${label} (${vw.s+1} of ${CSCREENS.length}) · ${s==='build'?c.build:c.style}${last?` · › next: ${CONCEPTS.find(x=>x.id===ids[(ix+1)%ids.length]).name}`:''}`;
+  if(proto){vwFrame.hidden=true;vwImg.hidden=false;vwImg.src=`concepts/proto-${s}.jpg`;vwImg.alt=`Our prototype: ${label}`}
+  else{vwImg.hidden=true;vwFrame.hidden=false;const src=`cx/${c.id}-${s}.html?v=7`;if(!vwFrame.src.endsWith(src)){vwFrame.onload=vwApply;vwFrame.src=src}else vwApply()}
+  vwFitScale();
+  try{localStorage.setItem('its-lineup-vw',JSON.stringify({pal:vw.pal,shape:vw.shape}))}catch(_){}
+}
+document.getElementById('vw-pages').innerHTML=CSCREENS.map(([x,l],i)=>`<button type="button" data-pg="${i}" aria-pressed="false">${l}</button>`).join('');
+function vwStyleOptions(){document.getElementById('vw-style').innerHTML=order('concepts').map((id,i)=>{const c=CONCEPTS.find(x=>x.id===id);return `<option value="${id}">${i+1}. ${esc(c.name)}</option>`}).join('')}
+function vwOpen(c,s,from){vw.c=c;vw.s=CSCREENS.findIndex(x=>x[0]===s);vw.focus=from;vwStyleOptions();lb.hidden=false;document.documentElement.style.overflow='hidden';vwShow();lb.querySelector('[data-lb="close"]').focus()}
+function vwClose(){lb.hidden=true;document.documentElement.style.overflow='';if(vw.focus)vw.focus.focus()}
+function vwStep(d){const n=CSCREENS.length,s=vw.s+d;if(s>=0&&s<n){vw.s=s;vwShow();return}const ids=order('concepts');vw.c=ids[(ids.indexOf(vw.c)+d+ids.length)%ids.length];vw.s=d>0?0:n-1;vwShow()}
+function vwStepC(d){const ids=order('concepts');vw.c=ids[(ids.indexOf(vw.c)+d+ids.length)%ids.length];vwShow()}
+document.addEventListener('click',e=>{const o=e.target.closest('[data-lb-open]');if(!o)return;const [c,s]=o.dataset.lbOpen.split(':');vwOpen(c,s,o)});
+document.getElementById('vw-style').addEventListener('change',e=>{vw.c=e.target.value;vwShow()});
+lb.addEventListener('click',e=>{const a=e.target.closest('[data-lb]'),pg=e.target.closest('[data-pg]'),pal=e.target.closest('[data-pal]'),sh=e.target.closest('[data-shape]');
+  if(pg){vw.s=+pg.dataset.pg;vwShow();return}if(pal&&!pal.disabled){vw.pal=pal.dataset.pal;vwShow();return}if(sh&&!sh.disabled){vw.shape=sh.dataset.shape;vwShow();return}
+  if(!a)return;const k=a.dataset.lb;if(k==='close')vwClose();else if(k==='prevc')vwStepC(-1);else if(k==='nextc')vwStepC(1);else vwStep(k==='next'?1:-1)});
+document.addEventListener('keydown',e=>{if(lb.hidden)return;if(e.target.tagName==='SELECT')return;if(e.key==='Escape')vwClose();if(e.key==='ArrowRight')vwStep(1);if(e.key==='ArrowLeft')vwStep(-1);if(e.key==='ArrowDown'){e.preventDefault();vwStepC(1)}if(e.key==='ArrowUp'){e.preventDefault();vwStepC(-1)}});
+
+/* ---------- tabs ---------- */
+const tabs=[...document.querySelectorAll('[role=tab]')];
+function showTab(id){tabs.forEach(t=>{const on=t.getAttribute('aria-controls')===id;t.setAttribute('aria-selected',String(on));document.getElementById(t.getAttribute('aria-controls')).hidden=!on});try{localStorage.setItem('its-lineup2-tab',id)}catch(_){}}
+tabs.forEach(t=>t.addEventListener('click',()=>showTab(t.getAttribute('aria-controls'))));
+{const T=['concepts','web','email','team'],h=location.hash.slice(1);let t=T.includes(h)?h:null;if(!t)try{t=localStorage.getItem('its-lineup2-tab')}catch(_){}if(T.includes(t))showTab(t)}
+
+/* ---------- start ---------- */
+try{const s=JSON.parse(localStorage.getItem('its-lineup2')||'null');if(s){mine.concepts=sanitize('concepts',s.concepts);mine.web=sanitize('web',s.web);mine.email=sanitize('email',s.email)}}catch(_){}
+document.querySelectorAll('[data-status]').forEach(st=>{const b=document.createElement('button');b.type='button';b.className='who-btn';b.hidden=true;b.addEventListener('click',()=>askName());st.after(b)});
+try{setName(localStorage.getItem('its-lineup-name')||'')}catch(_){}
+document.getElementById('nm-form').addEventListener('submit',e=>{e.preventDefault();const v=document.getElementById('nm-in').value.trim().replace(/\s+/g,' ');if(v.length<2){document.getElementById('nm-err').textContent='Please type your name.';return}const then=nmPending;closeName();setName(v);if(then)then();else if(dirty||hasSaved)saveNow()});
+document.getElementById('nm-cancel').addEventListener('click',()=>{closeName();if(dirty)bar('dirty')});
+document.getElementById('sbar-go').addEventListener('click',()=>{if(document.getElementById('sbar').classList.contains('ok')){bar('hide');document.getElementById('tab-team').click();window.scrollTo({top:0,behavior:'smooth'});return}saveNow()});
+document.getElementById('sbar-undo').addEventListener('click',()=>{if(okMine)Object.assign(mine,JSON.parse(JSON.stringify(okMine)));try{localStorage.setItem('its-lineup2',JSON.stringify(mine))}catch(_){}dirty=false;bar('hide');renderAll()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!document.getElementById('nm').hidden){e.stopImmediatePropagation();closeName()}},true);
+okMine=snap();
+renderAll();setStatus('Drag cards into your order, then press Save ranking.');
+loadSheet();setInterval(()=>{if(!document.hidden&&!saving)loadSheet()},20000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)loadSheet()});
+setStatus('Drag cards into your order, then press Save ranking.');
+if(new URLSearchParams(location.search).has('admin')){canManage=true;document.getElementById('tab-rankers').hidden=false;try{adminKey=localStorage.getItem('its-rank-admin')}catch(_){}document.getElementById('rk-keybox').hidden=!!adminKey;renderRankers();if(adminKey)loadSheet()}
+if(window.claude)(async()=>{try{
+  [db,users]=await Promise.all([window.claude?.use?window.claude.use('db'):null,window.claude?.use?window.claude.use('user'):null]);
+  if(!db||!users)return;uid=await users.id();
+  const w=await users.can('data.write'),own=await users.isOwner();canManage=w===true||own;if(!canManage)return;
+  document.getElementById('tab-rankers').hidden=false;
+  try{const k=await db.doc('config/admin').get();if(k.exists&&typeof k.data().key==='string')adminKey=k.data().key}catch(_){}
+  document.getElementById('rk-keybox').hidden=!(own&&!adminKey);
+  renderRankers();if(adminKey)loadSheet();
+}catch(_){}})();
+</script>
