@@ -498,8 +498,9 @@ if(!me||!/^[a-f0-9]{16,64}$/.test(me.id||'')||!(me.secret&&me.secret.length>=32)
 const isMe=d=>d.__id==='s:'+me.id;
 let adminKey=null,sheetLoaded=false,sheetErr=false;
 async function sheet(body){if(!SHEET_URL)throw new Error('no_sheet');const res=await fetch(SHEET_URL,{method:'POST',headers:{'content-type':'text/plain;charset=utf-8'},body:JSON.stringify(body)});return res.json()}
+const CLEARED=new Set(['d178eb96b1ce7585dd473381','65e656eff7ee17c8cc382800']);// test rows removed from the results
 async function loadSheet(){try{const j=await sheet(adminKey?{action:'list',key:adminKey}:{action:'list'});if(!j||!j.ok)throw 0;sheetErr=false;
-  allDocs=j.rows.map(x=>({__id:'s:'+x.id,name:x.name,concepts:x.concepts,web:x.web,email:x.email,updatedAt:x.updatedAt})).filter(d=>typeof d.name==='string'&&d.name.trim());
+  allDocs=j.rows.filter(x=>!CLEARED.has(x.id)).map(x=>({__id:'s:'+x.id,name:x.name,concepts:x.concepts,web:x.web,email:x.email,updatedAt:x.updatedAt})).filter(d=>typeof d.name==='string'&&d.name.trim());
   hiddenIds=new Set(j.rows.filter(x=>x.hidden).map(x=>'s:'+x.id));
   if(!sheetLoaded){sheetLoaded=true;const mineRow=allDocs.find(isMe);if(mineRow){hasSaved=true;if(!myName)setName(mineRow.name.trim());if(!dirty){mine.concepts=sanitize('concepts',mineRow.concepts);mine.web=sanitize('web',mineRow.web);mine.email=sanitize('email',mineRow.email);okMine=snap()}}}
   if(adminKey&&j.admin===false){adminKey=null;try{localStorage.removeItem('its-rank-admin')}catch(_){}document.getElementById('rk-keybox').hidden=false;document.getElementById('rk-msg').textContent='The removal key no longer matches the sheet. Paste the current key below.'}
