@@ -498,7 +498,7 @@ if(!me||!/^[a-f0-9]{16,64}$/.test(me.id||'')||!(me.secret&&me.secret.length>=32)
 const isMe=d=>d.__id==='s:'+me.id;
 let adminKey=null,sheetLoaded=false,sheetErr=false;
 async function sheet(body){if(!SHEET_URL)throw new Error('no_sheet');const res=await fetch(SHEET_URL,{method:'POST',headers:{'content-type':'text/plain;charset=utf-8'},body:JSON.stringify(body)});return res.json()}
-const CLEARED=new Set(['d178eb96b1ce7585dd473381','65e656eff7ee17c8cc382800','578e23c1a0ff988fdfb3c058']);// test rows removed from the results
+const CLEARED=new Set(['d178eb96b1ce7585dd473381','65e656eff7ee17c8cc382800','578e23c1a0ff988fdfb3c058','7d4a3d379d9480ff9cfdc3e7','57969d29f1691cbca916e51c','06e3e355cae8bca5cddb55de']);// test rows removed from the results
 async function loadSheet(){try{const j=await sheet(adminKey?{action:'list',key:adminKey}:{action:'list'});if(!j||!j.ok)throw 0;sheetErr=false;
   allDocs=j.rows.filter(x=>!CLEARED.has(x.id)&&!/^claude test/i.test(String(x.name||''))).map(x=>({__id:'s:'+x.id,name:x.name,concepts:x.concepts,web:x.web,email:x.email,updatedAt:x.updatedAt})).filter(d=>typeof d.name==='string'&&d.name.trim());
   {const top=new Map();allDocs.forEach(d=>{const k=d.name.trim().toLowerCase(),o=top.get(k);if(!o||String(d.updatedAt||'')>String(o.updatedAt||''))top.set(k,d)});allDocs=allDocs.filter(d=>top.get(d.name.trim().toLowerCase())===d)}
